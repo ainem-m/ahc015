@@ -271,7 +271,8 @@ B(後ろ)、F(前)も行列を変えただけで同様なので飛ばします�
 とか言われてもすぐに理解できないので、長期コンの１日目はここの実装を眺めて過ごします…
 
 ```Rust
-pub const DIJ: [(usize, usize); 4] = [(1, 0), (0, 1), (!0, 0), (0, !0)];
+199 pub const DIJ: [(usize, usize); 4] = [(1, 0), (0, 1), (!0, 0), (0, !0)];
+200 
 ```
 下(`B`)、右(`R`)、上(`F`)、左(`L`)の移動量をもった配列です。
 > ##### !0について
@@ -284,44 +285,51 @@ pub const DIJ: [(usize, usize); 4] = [(1, 0), (0, 1), (!0, 0), (0, !0)];
 
 
 ``` Rust
-pub fn compute_score(input: &Input, out: &[char]) -> (i64, String, State) {
-    let mut state = State::new(input);
-    for t in 0..out.len().min(N * N - 1) {
-        if let Err(err) = state.apply_move(out[t]) {
-            return (0, format!("{} (turn: {})", err, t), state);
-        }
-    }
-    let mut visited = mat![false; N; N];
-    let mut num = 0;
-    for i in 0..N {
-        for j in 0..N {
-            if !visited[i][j] && state.board[i][j] != 0 {
-                visited[i][j] = true;
-                let c = state.board[i][j];
-                let mut size = 1;
-                let mut stack = vec![(i, j)];
-                while let Some((i, j)) = stack.pop() {
-                    for &(di, dj) in &DIJ {
-                        let i2 = i + di;
-                        let j2 = j + dj;
-                        if i2 < N && j2 < N && !visited[i2][j2] && state.board[i2][j2] == c {
-                            visited[i2][j2] = true;
-                            stack.push((i2, j2));
-                            size += 1;
-                        }
-                    }
-                }
-                num += size * size;
-            }
-        }
-    }
-    let mut d = vec![0; M + 1];
-    for &f in &input.fs {
-        d[f] += 1;
-    }
-    let score = (1e6 * num as f64 / d[1..].iter().map(|d| d * d).sum::<i32>() as f64).round() as i64;
-    (score, String::new(), state)
-}
+201 pub fn compute_score(input: &Input, out: &[char]) -> (i64, String, State) {
+202     let mut state = State::new(input);
+203     for t in 0..out.len().min(N * N - 1) {
+204         if let Err(err) = state.apply_move(out[t]) {
+205             return (0, format!("{} (turn: {})", err, t), state);
+206         }
+207     }
+```
+まずは`out`に含まれるすべての移動を適用し、不正な移動がないかチェックしながら盤面を変化させてます。  
+移植する際には差分だけ計算するような実装にしないと試行回数が稼げなさそうですね。  
+`// TODO:差分だけ計算できるようにする`
+って書いておけばいいらしいです。未来の自分が頑張ってくれます。
+``` Rust 
+208     let mut visited = mat![false; N; N];
+209     let mut num = 0;
+210     for i in 0..N {
+211         for j in 0..N {
+212             if !visited[i][j] && state.board[i][j] != 0 {
+213                 visited[i][j] = true;
+214                 let c = state.board[i][j];
+215                 let mut size = 1;
+216                 let mut stack = vec![(i, j)];
+217                 while let Some((i, j)) = stack.pop() {
+218                     for &(di, dj) in &DIJ {
+219                         let i2 = i + di;
+220                         let j2 = j + dj;
+221                         if i2 < N && j2 < N && !visited[i2][j2] && state.board[i2][j2] == c {
+222                             visited[i2][j2] = true;
+223                             stack.push((i2, j2));
+224                             size += 1;
+225                         }
+226                     }
+227                 }
+228                 num += size * size;
+229             }
+230         }
+231     }
+232     let mut d = vec![0; M + 1];
+233     for &f in &input.fs {
+234         d[f] += 1;
+235     }
+236     let score = (1e6 * num as f64 / d[1..].iter().map(|d| d * d).sum::<i32>() as f64).round() as i64;
+237     (score, String::new(), state)
+238 }
+239 
 ```
 
 260 ~ 432行目 : 3種のキャンディの画像がSVG形式で埋め込まれている
